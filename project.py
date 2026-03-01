@@ -52,12 +52,6 @@ st.markdown(f"""
             margin-bottom: 15px;
 
             
-            /*background-color: rgba(255, 209, 220, 0.15) !important; 
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            color: #0D47A1;!important;
-            font-size: 18px;*/
-            
             }}
             .result_box{{
             background-color: rgba(227, 242, 253, 0.8) !important; /* 0.8 Transparent Blue */
@@ -100,6 +94,7 @@ if user_input:
     for ent in doc.ents:
       
         if ent.label_ in ["GPE", "LOC","FAC"]:
+            
             verb_head = ent.root.head
             is_subject= ent.root.dep_ =="nsubj"
             is_action =verb_head.lemma_.lower() in action_verbs
@@ -141,31 +136,65 @@ test_data =[
     ("I am visiting London.", ["London"]),
     ("Paris went to Germany.",["Germany"]),
     ("The Eiffel Tower is in Paris.",["Eiffel Tower","Paris"]),
-    ("Jordan ran towards candy shop.",[]),
-    ("I went to Lahore, Karachi and Islamabad last summer.",["Lahore","Karachi","Islamabad"])
+    ("Jordan walks towards candy shop.",[]),
+    ("I went to Lahore, Karachi and Islamabad in August.",["Lahore","Karachi","Islamabad"])
     ]
 def accuracy_test():
     true_positive =0 #Found place correctly
     false_positive = 0 # Found Person as a Place
     false_negative = 0 # missed actual places
+    action_verbs = ["go", "walk", "run", "eat", "talk", "say", "buy", "sell"]
+
 
     for text , expected in test_data:
         doc = nlp_model(text)
-        found = [ent.text for ent in doc.ents if ent.label_ in ["GPE","LOC","FAC"]]
+        found = []
+        for ent in doc.ents:
+      
+            if ent.label_ in ["GPE", "LOC","FAC"]:
+               verb_head = ent.root.head
+               is_subject= ent.root.dep_ =="nsubj"
+               is_action =verb_head.lemma_.lower() in action_verbs
+        
+               if is_subject and is_action:
+                    continue
+               found.append(ent.text)
 
         for item in found:
-            if item in expected: true_positive+=1
-    
+            if item in expected: 
+                true_positive+=1
+            else:
+                false_positive+=1
+        for item in expected:
+            if item not in found:
+                false_negative+=1        
+    #calculating Precision and Recall and habdling zero devision error
 
+    precision = (true_positive/(true_positive+false_positive)) if (true_positive+false_positive)>0 else 0
+    recall = (true_positive/(true_positive+false_negative)) if (true_positive+false_negative)>0 else 0
+    f1 = 2*(precision*recall)/(precision+recall) if (precision+recall)>0 else 0
+     
+    return precision*100, recall*100, f1*100
 
-#Accuracy Metrices (Precision, Recall and F1 Score)
+#running the test
+p_score, r_score, f1_score = accuracy_test()
+
+#Accuracy Metrices Display(Precision, Recall and F1 Score)
 with st.sidebar:
     st.header("Accuracy Metrices")
-    st.markdown("Tested against 5 differnt sentences.")
+    st.markdown("★ Tested against 5 differnt sentences.")
 
-    col1, col2 = st.columns(2)
+    col1, col2 ,col3 = st.columns(3)
     with col1:
-        st.metric(label ="Precision", value=f"{p_score:1f}%")
+        st.metric(label ="Precision", value=f"{p_score:.1f}%")
+
+    with col2:
+        st.metric(label="Recall", value=f"{r_score:.1f}%")
+    with col3:
+        st.metric(label="F1 Score ",value=f"{f1_score:.1f}%")  
+
+    st.divider()  
+
 
       
 
