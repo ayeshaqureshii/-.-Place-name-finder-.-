@@ -9,7 +9,7 @@ def get_base_64(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
-img_base64 = get_base_64("night.gif")
+img_base64 = get_base_64("Untitled design.gif")
 
 st.markdown(f""" 
             
@@ -54,7 +54,7 @@ st.markdown(f"""
             
             }}
             .result_box{{
-            background-color: rgba(227, 242, 253, 0.8) !important; /* 0.8 Transparent Blue */
+            background-color: rgba(220,192,236,0.8) !important; /* 0.8 Transparent Blue */
             backdrop-filter: blur(8px);
             padding: 20px;
             border-radius: 12px;
@@ -94,13 +94,22 @@ if user_input:
     for ent in doc.ents:
       
         if ent.label_ in ["GPE", "LOC","FAC"]:
+
+            # Open Ended Enhancements: Entity Linking
+            wiki_URL = f"https://en.wikipedia.org/wiki/{ent.text.replace(' ', '_')}"
             
-            verb_head = ent.root.head
-            is_subject= ent.root.dep_ =="nsubj"
-            is_action =verb_head.lemma_.lower() in action_verbs
-        
-            if is_subject and is_action:
-                continue
+            is_valid = True
+            #testing for ambiguity
+            if ent.label_ =="GPE":  
+               verb_head = ent.root.head
+               is_subject= ent.root.dep_ =="nsubj"
+               is_action =verb_head.lemma_.lower() in action_verbs
+
+               # if a person named after a Geographical entity is doing something, skio
+               if is_subject and is_action:
+                   is_valid = False
+            if not is_valid:
+                continue   
             if ent.label_ == "GPE":
                 display_label ="CITY / COUNTRY"
             elif ent.label_ == "LOC"   :
@@ -112,7 +121,8 @@ if user_input:
 
             extracted_data.append({
                 "Place": ent.text ,
-                "Type":display_label
+                "Type":display_label,
+                "Link":wiki_URL
 
             })
     st.subheader("Detected Places")       
@@ -120,7 +130,21 @@ if user_input:
         for item in extracted_data:
             st.markdown(f"""
                         <div class = "result_box">
-                        <img src = "https://i.pinimg.com/webp/736x/b7/db/41/b7db412ce4fa61ddf2aeb150b796d493.webp" width = "25" style = "vertical-align :middle; margin-right: 10px;">
+                            <div style = "display: flex ; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <img src = "https://i.pinimg.com/webp/736x/b7/db/41/b7db412ce4fa61ddf2aeb150b796d493.webp" width = "25" style = "vertical-align :middle; margin-right: 10px;">
+                                    <span style="font-size: 18px; font-weight: bold;">{item["Place"]}</span>
+                                    <br><small style="margin-left: 35px; color: #555;">{item["Type"]}</small>
+                                <div>
+                                <a href="{item['Link']}" target="_blank" style="text-decoration: none;">
+                                    <div style="background-color: #f299e6; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #fff; transition: 0.3s;">
+                                🗒 WIKIPEDIA ˎˊ˗ 
+                                    </div>
+                                </a>
+                            </div>
+                                  
+                        
+                        
                         {item["Place"]} 𓂃✃ {item["Type"]}
                         </div>
                         
@@ -143,18 +167,23 @@ def accuracy_test():
     true_positive =0 #Found place correctly
     false_positive = 0 # Found Person as a Place
     false_negative = 0 # missed actual places
-    action_verbs = ["go", "walk", "run", "eat", "talk", "say", "buy", "sell"]
+    action_verbs = ["go", "walk", "run", "eat", "talk", "say", "buy", "sell","sleep","drink"]
 
 
     for text , expected in test_data:
         doc = nlp_model(text)
         found = []
         for ent in doc.ents:
+
       
             if ent.label_ in ["GPE", "LOC","FAC"]:
-               verb_head = ent.root.head
-               is_subject= ent.root.dep_ =="nsubj"
-               is_action =verb_head.lemma_.lower() in action_verbs
+               is_subject = False
+               is_action = False
+               
+               if ent.label_=="GPE":
+                    verb_head = ent.root.head
+                    is_subject= ent.root.dep_ =="nsubj"
+                    is_action =verb_head.lemma_.lower() in action_verbs
         
                if is_subject and is_action:
                     continue
