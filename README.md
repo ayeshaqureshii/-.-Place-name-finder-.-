@@ -7,6 +7,7 @@ FEATURES: [1] Uses Dependency Parsing to filter out location names acting as sub
           [2] Provides Wikipedia articles link of found places.
           [3] Utilizes spaCy's en_core_web_md model for 300-dimensional word vector accuracy.
           [4] Provides clean interface for input and output display.
+          [5] Provides Accuracy Metrices (Precision, Recall and F1 Score)
 
 OPEN ENDED ENHANCEMENTS:
         Entity Linking	:Link detected locations to their Wikipedia or Wikidata entries.
